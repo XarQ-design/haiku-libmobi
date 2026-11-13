@@ -1,0 +1,84 @@
+SUMMARY="Library for Mobipocket and Kindle e-books"
+DESCRIPTION="libmobi is a C library for handling Mobipocket/MOBI e-book \
+files, including Kindle KF8 (AZW3) books. It reads their text, metadata and \
+embedded images, and can convert them to EPUB. The package also has the \
+mobitool, mobimeta and mobidrm command line tools."
+HOMEPAGE="https://github.com/bfabiszewski/libmobi"
+COPYRIGHT="2014-2025 Bartek Fabiszewski"
+LICENSE="GNU LGPL v3"
+REVISION="1"
+SOURCE_URI="https://github.com/bfabiszewski/libmobi/releases/download/v$portVersion/libmobi-$portVersion.tar.gz"
+CHECKSUM_SHA256="9a6fb2c56b916f8fa8b15e0c71008d908109508c944ea1d297881d4e277bf7e7"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+commandSuffix=$secondaryArchSuffix
+commandBinDir=$binDir
+if [ "$targetArchitecture" = x86_gcc2 ]; then
+	commandSuffix=
+	commandBinDir=$prefix/bin
+fi
+
+libVersion="0.0.0"
+libVersionCompat="$libVersion compat >= ${libVersion%%.*}"
+
+PROVIDES="
+	libmobi$secondaryArchSuffix = $portVersion
+	cmd:mobidrm$commandSuffix = $portVersion
+	cmd:mobimeta$commandSuffix = $portVersion
+	cmd:mobitool$commandSuffix = $portVersion
+	lib:libmobi$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	lib:libxml2$secondaryArchSuffix
+	lib:libz$secondaryArchSuffix
+	"
+
+PROVIDES_devel="
+	libmobi${secondaryArchSuffix}_devel = $portVersion
+	devel:libmobi$secondaryArchSuffix = $libVersionCompat
+	"
+REQUIRES_devel="
+	libmobi$secondaryArchSuffix == $portVersion base
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	devel:libxml2$secondaryArchSuffix
+	devel:libz$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:awk
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	cmd:pkg_config$secondaryArchSuffix
+	"
+
+BUILD()
+{
+	runConfigure --omit-dirs binDir ./configure \
+		--bindir=$commandBinDir \
+		--disable-static \
+		--with-libxml2
+	make $jobArgs
+}
+
+INSTALL()
+{
+	make install
+
+	rm -f $libDir/libmobi.la
+
+	prepareInstalledDevelLib libmobi
+	fixPkgconfig
+
+	packageEntries devel \
+		$developDir
+}
+
+TEST()
+{
+	make check
+}
